@@ -4,13 +4,16 @@
 #include "kinematics.h"
 #include "magnetometer.h"
 #include "pid.h"
+#include "results.h"
 
 #define YELLOW_LED_PIN 13
 
-
+Results_c results;
 Motors_c motors;
 Kinematics_c kinematics;
 Magnetometer_c magnetometer;
+
+bool resultsToneDoOnce = false;
 
 // magnetometer calibrator 
 int currentStep = 0;
@@ -62,6 +65,9 @@ long movement_time_start = 0;
 #define STATE_MAGNETOMETER_CALIBRATE  9
 #define STATE_MAGNETOMETER_SEEK_NORTH 10
 #define STATE_MAGNETOMETER_METAL_DETECT 11
+
+#define STATE_PRINT_RESULTS 12
+
 int currentState = 0;
 int calibrationRotationCount = 1;
 
@@ -157,6 +163,7 @@ void loop() {
       }
       else{
         Serial.println((String) " Done magnetometer calib");
+        //currentState = STATE_MAGNETOMETER_SEEK_NORTH;
         currentState = STATE_MAGNETOMETER_METAL_DETECT;
       }
     }
@@ -189,8 +196,14 @@ void loop() {
      // Serial.println((String)"tmag: " + tmag);
 
       
-      Serial.println((String)"teslas: " + teslas);
-      Serial.println((String)"teslasUnfiltered: " + teslasUnfiltered);
+      //Serial.println((String)"teslas: " + teslas);
+      //Serial.println(teslas);
+      //Serial.println(metalAngle);
+      bool resultsBufferNotFull = results.addResult(metalAngle);
+      if (!resultsBufferNotFull) {
+        currentState = STATE_PRINT_RESULTS;
+      }
+      //Serial.println((String)"teslasUnfiltered: " + teslasUnfiltered);
 
       if(abs(teslas) > 500){
         tone(6, abs(teslas));
@@ -237,6 +250,24 @@ void loop() {
       
       currentState = STATE_MAGNETOMETER_CALIBRATE;
       currentStep=0;
+    } else if (currentState == STATE_PRINT_RESULTS) {
+      if (!resultsToneDoOnce) {
+        resultsToneDoOnce = true;
+        delay(500);
+        tone(6,100);
+        delay(500);
+        noTone(6);
+        delay(500);
+        tone(6,400);
+        delay(500);
+        noTone(6);
+        delay(500);
+        tone(6,800);
+        delay(500);
+        noTone(6);
+      }
+      results.reportResultsOverSerial();
+      delay(5000);
     }
     
     delay(30);
