@@ -173,17 +173,15 @@ void loop() {
       delay(100);
       noTone(6);
       float currentAngle= kinematics.currentRotation * (180/PI);
-      fullRotationsIntoCurrentRotation = (currentAngle / 360)+1;
+      fullRotationsIntoCurrentRotation = (currentAngle / 360) -1;
       currentState = STATE_MAGNETOMETER_ROTATE_TO_BEST_MAGNETIC_ANGLE;
-     
     }
+    
     if(currentState == STATE_MAGNETOMETER_ROTATE_TO_BEST_MAGNETIC_ANGLE){
-      motors.turnRightStationary(20);
+      motors.turnLeftStationary(40);
 
       
       float currentAngle = kinematics.currentRotation * (180/PI);
-
-      
 
       
 
@@ -193,7 +191,7 @@ void loop() {
       
 
       
-      if(currentAngle > resetAngle -3  && currentAngle < resetAngle +3){
+      if(currentAngle > resetAngle -5  && currentAngle < resetAngle +5){
         motors.turnRightStationary(0);
         delay(100);
       
