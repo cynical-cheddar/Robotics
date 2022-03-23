@@ -86,14 +86,14 @@ class Motors_c {
     }
 
     void turnRightOneWheel(float pwm){
-      if(pwm < 20){
+      if(pwm < 20 && pwm > -20){
         pwm = 20;
       }
       setMotorPower("right", 0);
       setMotorPower("left", pwm);
     }
     void turnLeftOneWheel(float pwm){
-      if(pwm < 20){
+      if(pwm < 20 && pwm > -20){
         pwm = 20;
       }
       setMotorPower("right", pwm);

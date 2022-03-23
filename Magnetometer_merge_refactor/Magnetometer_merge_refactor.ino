@@ -5,15 +5,12 @@
 #include "magnetometer.h"
 #include "pid.h"
 #include "results.h"
-
 #define YELLOW_LED_PIN 13
 
-Results_c results;
+
 Motors_c motors;
 Kinematics_c kinematics;
 Magnetometer_c magnetometer;
-
-bool resultsToneDoOnce = false;
 
 // magnetometer calibrator 
 int currentStep = 0;
@@ -52,6 +49,8 @@ float northRelativeRotation = 0;
 // defined when calibration is exited and we are seeking line / starting test
 long movement_time_start = 0;
 
+float bestMagneticRotation = 180;
+float bestMetalAngle = 180;
 #define STATE_SETUP  0
 #define STATE_CALIBRATING  1
 #define STATE_CALIBRATING_FINISH  2
@@ -61,22 +60,33 @@ long movement_time_start = 0;
 #define STATE_TEST_ODOMETRY_FORWARD  6
 #define STATE_TEST_ODOMETRY_HOME  7
 
-#define STATE_MAGNETOMETER_LOOP  8
+#define STATE_MAGNETOMETER_GOVERNOR  8
 #define STATE_MAGNETOMETER_CALIBRATE  9
 #define STATE_MAGNETOMETER_SEEK_NORTH 10
 #define STATE_MAGNETOMETER_METAL_DETECT 11
-
-#define STATE_PRINT_RESULTS 12
-
+#define STATE_MAGNETOMETER_METAL_SEEK 12
+#define STATE_MAGNETOMETER_ROTATE_TO_BEST_MAGNETIC_ANGLE 13
 int currentState = 0;
 int calibrationRotationCount = 1;
+int calibrateWheel = 0;
+
+float targetRotation = 0;
+unsigned long currentDetectionTime = 0;
+unsigned long detectionTimePerOrientation = 350000;
+
+float divisionSteps = 20;
+float divisionTotal = 360;
+int cyclesCompleted = 0;
+int currentDivisionStep = 0;
+float stepSize = 18;
+int fullRotationsIntoCurrentRotation = 0;
 
 // ===========================================CALIBRATION========================================
 
 
 // WOT WE SHOULD GO AND DO FOR EXPERIMENT LIKE IT'S 2016 AND WE'RE DOING FOOKIN GCSE PHYSICS
 
-//  HYPOTHESIS - WE SHOULD BE ABLE TO DETECT FERROUS MATERIAL FROM THE ERROR SIGNAL BETWEEN MAGNETOMETER READINGS AND THE EARTH'S MAGNETIC FIELD
+//  HYPOTHESIS - WE SHOULD EB ABLE TO DETECT FERROUS MATERIAL FROM THE ERROR SIGNAL BETWEEN MAGNETOMETER READINGS AND THE EARTH'S MAGNETIC FIELD
 // WE THINK THERE WILL BE A MINIMUM SIZE OF FERROUS OBJECT WE WILL BE ABLE TO DETECT. THIS IS BECAUSE OF THE GENERAL NOISE IN MAGNETIC FIELD. READINGS +- GAUSS. THIS WILL BE AT A LIMITED RESOLUTION.
 
 
@@ -112,6 +122,27 @@ void setup() {
 }
 
 
+bool isBestMagneticRotation(float newAngle){
+
+  // reduce rotation to deviation from north
+  float newDifference = newAngle;
+  if(newAngle > 180) newDifference = 360 - newAngle;
+
+  float oldDifference = bestMetalAngle;
+  if(bestMetalAngle > 180) oldDifference = 360 - bestMetalAngle;
+  
+  Serial.println((String) "newAngle " + newAngle + " bestMetalAngle: " + bestMetalAngle);
+  Serial.println((String) "new difference " + newDifference + " oldDifference: " + oldDifference);
+  
+  
+
+  if(newDifference < oldDifference) return true;
+  else return false;
+
+  
+}
+
+
 // Repeats.
 void loop() {
   
@@ -131,11 +162,53 @@ void loop() {
 
 
 
-
-    if (currentState == STATE_MAGNETOMETER_LOOP){
-      Serial.println("magnetometer used");
-      magnetometer.updateMagnetometer();
+    // state is used to dictate the searching for metal cycle
+    if (currentState == STATE_MAGNETOMETER_GOVERNOR){
+      motors.turnRightStationary(0);
+      cyclesCompleted += 1;
+      divisionTotal = divisionTotal / 2;
+      delay(100);
+      
+      tone(6, 2000);
+      delay(100);
+      noTone(6);
+      float currentAngle= kinematics.currentRotation * (180/PI);
+      fullRotationsIntoCurrentRotation = (currentAngle / 360)+1;
+      currentState = STATE_MAGNETOMETER_ROTATE_TO_BEST_MAGNETIC_ANGLE;
+     
     }
+    if(currentState == STATE_MAGNETOMETER_ROTATE_TO_BEST_MAGNETIC_ANGLE){
+      motors.turnRightStationary(20);
+
+      
+      float currentAngle = kinematics.currentRotation * (180/PI);
+
+      
+
+      
+
+      float resetAngle = (bestMagneticRotation + fullRotationsIntoCurrentRotation*360) - (divisionTotal/2);
+      //targetAngle = (bestMagneticRotation + fullRotationsIntoCurrentRotation*360) + (divisionTotal/2);
+
+      
+
+      
+      if(currentAngle > resetAngle -3  && currentAngle < resetAngle +3){
+        motors.turnRightStationary(0);
+        delay(100);
+      
+        tone(6, 2500);
+        delay(100);
+        noTone(6);
+        targetRotation = currentAngle + divisionTotal;
+        currentState = STATE_MAGNETOMETER_METAL_DETECT;
+      }
+    }
+
+
+
+
+    
     else if (currentState == STATE_MAGNETOMETER_CALIBRATE){
 
       int steps = 90;
@@ -156,20 +229,46 @@ void loop() {
           //tone(6,10 * currentStep);
           delay(50);
           noTone(6);
+          if(calibrateWheel == 0)calibrateWheel = 1;
+          else calibrateWheel = 0;
+          
         }
         else{
-          motors.turnRightOneWheel(20);
+          if(calibrateWheel == 0){
+            motors.turnRightOneWheel(20);
+          }
+          if(calibrateWheel == 1){
+            motors.turnLeftOneWheel(-20);
+          }
+          
         }
       }
       else{
-        Serial.println((String) " Done magnetometer calib");
-        //currentState = STATE_MAGNETOMETER_SEEK_NORTH;
+        Serial.println((String) " Done magnetometer calibration");
         currentState = STATE_MAGNETOMETER_METAL_DETECT;
+        targetRotation = kinematics.currentRotation*(180 / PI) + divisionTotal;
       }
     }
+
+    
     else if (currentState == STATE_MAGNETOMETER_METAL_DETECT){
-      motors.turnRightStationary(0);
+      // if we have moved enough, halve our search pattern
+      //if(currentDivisionStep >= divisionSteps) currentState = STATE_MAGNETOMETER_GOVERNOR;
+      
+      motors.turnRightStationary(20);
+      
+      currentDetectionTime += deltaTime;
+      // wait n seconds until changing state
+      
+      if(kinematics.currentRotation*(180 / PI) > targetRotation){
+        currentDetectionTime = 0;
+        currentState = STATE_MAGNETOMETER_GOVERNOR;
+       // targetRotation = kinematics.currentRotation*(180/PI) + stepSize;
+       
+      }
       float currentAngle = kinematics.currentRotation * (180/PI);
+
+      // convert current rotation to simply be in 360 degree bounds
       while(currentAngle > 360){
         currentAngle -= 360;
       }
@@ -183,11 +282,6 @@ void loop() {
 
       float compassAngle = magnetometer.averageHeading();
       float teslasUnfiltered = magnetometer.calculateTeslaSum();
-
-      // if the teslas
-
-
-      
      // float tmagUnfiltered = magnetometer.calculateTeslaSumMagnitudeFiltered(currentAngle/4);
       //tone(6, metalAngle*10);
       analogWrite( YELLOW_LED_PIN, metalAngle*2 );
@@ -196,23 +290,62 @@ void loop() {
      // Serial.println((String)"tmag: " + tmag);
 
       
-      //Serial.println((String)"teslas: " + teslas);
-      //Serial.println(teslas);
-      //Serial.println(metalAngle);
-      bool resultsBufferNotFull = results.addResult(metalAngle);
-      if (!resultsBufferNotFull) {
-        currentState = STATE_PRINT_RESULTS;
-      }
-      //Serial.println((String)"teslasUnfiltered: " + teslasUnfiltered);
+     // Serial.println((String)"teslas: " + teslas);
+     // Serial.println((String)"teslasUnfiltered: " + teslasUnfiltered);
+     // delay(500);
 
-      if(abs(teslas) > 500){
-        tone(6, abs(teslas));
+      // if the teslas are greater than a threshold, detect magnets and show existence. Do this while turning slowly
+      if(abs(teslas) > 300){
+       // tone(6, abs(teslas));
+
+        // there is some sort of field here, calculate the metal angle
+        float metalAngle = magnetometer.averageHeadingFiltered(currentAngle/4);
+        // if this is angle with the least deviation from odometric north, then this is our new best angle
+        if(isBestMagneticRotation(metalAngle)){
+           motors.turnRightStationary(0);
+          Serial.println("NEW BEST!!!!!!!!!!!!!!!!!!!!");
+          bestMagneticRotation = currentAngle;
+          bestMetalAngle = metalAngle;
+          tone(6, 100);
+          delay(400);
+          noTone(6);
+          Serial.println((String) "Best angle: " + bestMagneticRotation);
+          Serial.println((String) "Best bestMetalAngle: " + bestMetalAngle);
+        }
       }
       else{
         noTone(6);
       }
     //  Serial.println((String)"tmag: " + tmag);
      // Serial.println((String)"metalAngle: " + metalAngle);
+      
+    }
+
+    else if (currentState == STATE_MAGNETOMETER_METAL_SEEK){
+      /*float currentAngle = kinematics.currentRotation * (180/PI);
+
+      
+      // convert current rotation to simply be in 360 degree bounds
+      while(currentAngle > 360){
+        currentAngle -= 360;
+      }
+      while(currentAngle < 0){
+        currentAngle += 360;
+      }*/
+
+
+      // rotate 45 degrees until having reached strongest field + lowest magnetic deviation
+      // we will know the best orientation. after a complete revolution, go to this 
+      motors.turnRightStationary(20);
+      if(kinematics.currentRotation*(180/PI) >= targetRotation){
+        tone(6, 2000);
+        delay(100);
+        noTone(6);
+        currentDivisionStep += 1;
+        currentState = STATE_MAGNETOMETER_METAL_DETECT;
+      }
+      
+
       
     }
     else if (currentState == STATE_MAGNETOMETER_SEEK_NORTH){
@@ -250,24 +383,6 @@ void loop() {
       
       currentState = STATE_MAGNETOMETER_CALIBRATE;
       currentStep=0;
-    } else if (currentState == STATE_PRINT_RESULTS) {
-      if (!resultsToneDoOnce) {
-        resultsToneDoOnce = true;
-        delay(500);
-        tone(6,100);
-        delay(500);
-        noTone(6);
-        delay(500);
-        tone(6,400);
-        delay(500);
-        noTone(6);
-        delay(500);
-        tone(6,800);
-        delay(500);
-        noTone(6);
-      }
-      results.reportResultsOverSerial();
-      delay(5000);
     }
     
     delay(30);

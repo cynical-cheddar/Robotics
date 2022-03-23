@@ -158,12 +158,16 @@ class Magnetometer_c {
       avg_x /= 10.0;
       avg_y /= 10.0;
       avg_z /= 10.0;
+
+      // TODO: Find vector direction to further filter
+
+      
      // Serial.println((String) "avg x " + avg_x + " avg y " + avg_y); 
 
 
-      //Serial.println((String) "Corrected teslas: " + avg_x + " " +avg_y + " " + avg_z);
+     // Serial.println((String) "Corrected teslas: " + avg_x + " " +avg_y + " " + avg_z);
       // avg is the average measure of the magnetic vector.
-      return avg_x + avg_y;
+      return sqrt(avg_x * avg_x + avg_y*avg_y);
   }
 
     float calculateTeslaSum(){
@@ -183,7 +187,7 @@ class Magnetometer_c {
      // Serial.println((String) "avg x " + avg_x + " avg y " + avg_y); 
 
 
-      //Serial.println((String) "raw teslas: " + avg_x + " " +avg_y + " " + avg_z);
+     // Serial.println((String) "raw teslas: " + avg_x + " " +avg_y + " " + avg_z);
       // avg is the average measure of the magnetic vector.
       return avg_x + avg_y;
   }
