@@ -66,6 +66,7 @@ float bestMetalAngle = 180;
 #define STATE_MAGNETOMETER_METAL_DETECT 11
 #define STATE_MAGNETOMETER_METAL_SEEK 12
 #define STATE_MAGNETOMETER_ROTATE_TO_BEST_MAGNETIC_ANGLE 13
+#define STATE_FINISH 14
 int currentState = 0;
 int calibrationRotationCount = 1;
 int calibrateWheel = 0;
@@ -174,7 +175,28 @@ void loop() {
       noTone(6);
       float currentAngle= kinematics.currentRotation * (180/PI);
       fullRotationsIntoCurrentRotation = (currentAngle / 360) -1;
-      currentState = STATE_MAGNETOMETER_ROTATE_TO_BEST_MAGNETIC_ANGLE;
+
+      if(cyclesCompleted > 15){
+        currentState = STATE_FINISH;
+      }
+      else{
+        currentState = STATE_MAGNETOMETER_ROTATE_TO_BEST_MAGNETIC_ANGLE;
+      }
+      
+    }
+    if(currentState == STATE_FINISH){
+      float currentAngle = kinematics.currentRotation * (180/PI);
+      motors.turnLeftStationary(20);
+      float resetAngle = (bestMagneticRotation + fullRotationsIntoCurrentRotation*360);
+      if(currentAngle < resetAngle){
+        motors.turnRightStationary(0);
+        tone(6, 1000);
+        delay(200);
+        tone(6, 1500);
+        delay(200);
+        noTone(6);
+        delay(300);
+      }
     }
     
     if(currentState == STATE_MAGNETOMETER_ROTATE_TO_BEST_MAGNETIC_ANGLE){
@@ -243,6 +265,10 @@ void loop() {
       }
       else{
         Serial.println((String) " Done magnetometer calibration");
+
+        motors.turnRightStationary(0);
+        magnetometer.finishedCalibration();
+        
         currentState = STATE_MAGNETOMETER_METAL_DETECT;
         targetRotation = kinematics.currentRotation*(180 / PI) + divisionTotal;
       }

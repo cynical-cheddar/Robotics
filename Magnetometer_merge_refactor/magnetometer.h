@@ -63,6 +63,51 @@ class Magnetometer_c {
   uint16_t driveTime; // Time to drive straight, in milliseconds
 
 
+  void finishedCalibration(){
+    tone(6, 1500);
+    delay(200);
+    tone(6, 1000);
+    delay(200);
+    noTone(6);
+    delay(300);
+    tone(6, 1500);
+    delay(200);
+    tone(6, 1000);
+    delay(200);
+    noTone(6);
+    delay(300);
+    tone(6, 1500);
+    delay(200);
+    tone(6, 1000);
+    delay(200);
+    noTone(6);
+    delay(300);
+    tone(6, 1500);
+    delay(200);
+    tone(6, 1000);
+    delay(200);
+    noTone(6);
+    delay(300);
+    tone(6, 1500);
+    delay(200);
+    tone(6, 1000);
+    delay(200);
+    noTone(6);
+    delay(300);
+    tone(6, 1500);
+    delay(200);
+    tone(6, 1000);
+    delay(200);
+    noTone(6);
+    delay(300);
+    tone(6, 1500);
+    delay(200);
+    tone(6, 1000);
+    delay(200);
+    noTone(6);
+    delay(300);
+  }
+
   
   void selectHyper()
   {
