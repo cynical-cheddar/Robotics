@@ -46,6 +46,8 @@ float lastForwardAngle = 0;
 
 float northRelativeRotation = 0;
 
+
+
 // defined when calibration is exited and we are seeking line / starting test
 long movement_time_start = 0;
 
@@ -81,6 +83,8 @@ int cyclesCompleted = 0;
 int currentDivisionStep = 0;
 float stepSize = 18;
 int fullRotationsIntoCurrentRotation = 0;
+
+
 
 // ===========================================CALIBRATION========================================
 
@@ -217,7 +221,7 @@ void loop() {
         motors.turnRightStationary(0);
         delay(100);
       
-        tone(6, 2500);
+        tone(6, 250);
         delay(100);
         noTone(6);
         targetRotation = currentAngle + divisionTotal;
@@ -319,7 +323,7 @@ void loop() {
      // delay(500);
 
       // if the teslas are greater than a threshold, detect magnets and show existence. Do this while turning slowly
-      if(abs(teslas) > 300){
+      if(abs(teslas) > magnetometer.largestCalibrationMagnitude*1.75){
        // tone(6, abs(teslas));
 
         // there is some sort of field here, calculate the metal angle
@@ -362,7 +366,7 @@ void loop() {
       // we will know the best orientation. after a complete revolution, go to this 
       motors.turnRightStationary(20);
       if(kinematics.currentRotation*(180/PI) >= targetRotation){
-        tone(6, 2000);
+        tone(6, 200);
         delay(100);
         noTone(6);
         currentDivisionStep += 1;

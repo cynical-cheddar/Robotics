@@ -15,7 +15,7 @@ class Magnetometer_c {
   #define DEVIATION_THRESHOLD 5
   
   
-
+  float largestCalibrationMagnitude = 0;
 
 
   int16_t backgroundFieldMap_xs[90];
@@ -387,6 +387,10 @@ class Magnetometer_c {
       backgroundFieldMap_xs[index] = avg_x;
       backgroundFieldMap_ys[index] = avg_y;
       backgroundFieldMap_zs[index] = avg_z;
+
+
+      float stepMagnitude = sqrt(avg_x * avg_x + avg_y*avg_y);
+      if(stepMagnitude >largestCalibrationMagnitude ) largestCalibrationMagnitude = stepMagnitude;
   }
   
   void updateMagnetometer()
