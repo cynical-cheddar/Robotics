@@ -244,14 +244,14 @@ void loop() {
          
         if(kinematics.currentRotation*(180 / PI) >= currentStepTargetRotation){
           motors.turnRightStationary(0);
-          delay(50);
+          delay(30);
           currentStep += 1;
           currentStepTargetRotation += interval;
           Serial.println((String) " Magnetometer heading in calibration:  " + magnetometer.averageHeading());
           Serial.println((String) " Kinematics heading in calibration:  " + kinematics.currentRotation*(180/PI));
           magnetometer.calibrationStep(currentStep);
           //tone(6,10 * currentStep);
-          delay(50);
+          delay(20);
           noTone(6);
           if(calibrateWheel == 0)calibrateWheel = 1;
           else calibrateWheel = 0;
@@ -323,7 +323,7 @@ void loop() {
      // delay(500);
 
       // if the teslas are greater than a threshold, detect magnets and show existence. Do this while turning slowly
-      if(abs(teslas) > magnetometer.largestCalibrationMagnitude*1.75){
+      if(abs(teslas) > 320 && (currentAngle > 5 && currentAngle <355)){
        // tone(6, abs(teslas));
 
         // there is some sort of field here, calculate the metal angle

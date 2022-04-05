@@ -193,16 +193,16 @@ class Magnetometer_c {
       float background_x = backgroundFieldMap_xs[filterIndex];
       float background_y = backgroundFieldMap_ys[filterIndex];
       float background_z = backgroundFieldMap_zs[filterIndex];
-      for(int i = 0; i < 10; i ++)
+      for(int i = 0; i < 100; i ++)
       {
         mag.read();
         avg_x += (mag.m.x - background_x);
         avg_y += (mag.m.y - background_y);
         avg_z += (mag.m.z - background_z);
       }
-      avg_x /= 10.0;
-      avg_y /= 10.0;
-      avg_z /= 10.0;
+      avg_x /= 100.0;
+      avg_y /= 100.0;
+      avg_z /= 100.0;
 
       // TODO: Find vector direction to further filter
 
@@ -374,16 +374,16 @@ class Magnetometer_c {
     float avg_x = 0;
       float avg_y = 0;
       float avg_z = 0;
-      for(int i = 0; i < 10; i ++)
+      for(int i = 0; i < 100; i ++)
       {
         mag.read();
         avg_x += mag.m.x;
         avg_y += mag.m.y;
         avg_z += mag.m.z;
       }
-      avg_x /= 10.0;
-      avg_y /= 10.0;
-      avg_z /= 10.0;
+      avg_x /= 100.0;
+      avg_y /= 100.0;
+      avg_z /= 100.0;
       backgroundFieldMap_xs[index] = avg_x;
       backgroundFieldMap_ys[index] = avg_y;
       backgroundFieldMap_zs[index] = avg_z;
