@@ -65,47 +65,47 @@ class Magnetometer_c {
 
   void finishedCalibration(){
     tone(6, 1500);
-    delay(200);
+    delay(500);
     tone(6, 1000);
-    delay(200);
+    delay(500);
     noTone(6);
-    delay(300);
+    delay(500);
     tone(6, 1500);
-    delay(200);
+    delay(500);
     tone(6, 1000);
-    delay(200);
+    delay(500);
     noTone(6);
-    delay(300);
+    delay(500);
     tone(6, 1500);
-    delay(200);
+    delay(500);
     tone(6, 1000);
-    delay(200);
+    delay(500);
     noTone(6);
-    delay(300);
+    delay(500);
     tone(6, 1500);
-    delay(200);
+    delay(500);
     tone(6, 1000);
-    delay(200);
+    delay(500);
     noTone(6);
-    delay(300);
+    delay(500);
     tone(6, 1500);
-    delay(200);
+    delay(500);
     tone(6, 1000);
-    delay(200);
+    delay(500);
     noTone(6);
-    delay(300);
+    delay(500);
     tone(6, 1500);
-    delay(200);
+    delay(500);
     tone(6, 1000);
-    delay(200);
+    delay(500);
     noTone(6);
-    delay(300);
+    delay(500);
     tone(6, 1500);
-    delay(200);
+    delay(500);
     tone(6, 1000);
-    delay(200);
+    delay(500);
     noTone(6);
-    delay(300);
+    delay(500);
   }
 
   
