@@ -12,6 +12,7 @@ Motors_c motors;
 Kinematics_c kinematics;
 Magnetometer_c magnetometer;
 
+float fcslast = 0;
 // magnetometer calibrator 
 int currentStep = 0;
 float currentStepTargetRotation = 0;
@@ -69,6 +70,11 @@ float bestMetalAngle = 180;
 #define STATE_MAGNETOMETER_METAL_SEEK 12
 #define STATE_MAGNETOMETER_ROTATE_TO_BEST_MAGNETIC_ANGLE 13
 #define STATE_FINISH 14
+#define STATE_DIAGNOSTIC 15
+#define STATE_DIAGNOSTIC_METAL 16
+bool diagnosticMode = false;
+bool diagnosticMode2 = true;
+bool diagnosticMode3 = false;
 int currentState = 0;
 int calibrationRotationCount = 1;
 int calibrateWheel = 0;
@@ -108,18 +114,19 @@ void setup() {
   // Start serial, send debug text.
   Serial.begin(9600);
   delay(1000);
-  Serial.println("***RESET***");
+  //Serial.println("***RESET***");
 
   motors.initialise();
   pinMode(YELLOW_LED_PIN, OUTPUT);
   digitalWrite(YELLOW_LED_PIN, HIGH);   // turn the LED on (HIGH is the voltage level)
-  Serial.println("Setup complete.");
+ // Serial.println("Setup complete.");
 
 
   magnetometer.setupMagnetometer();
   delay(1000);
   //currentState = STATE_MAGNETOMETER_LOOP;
-  currentState = STATE_MAGNETOMETER_SEEK_NORTH;
+  if(!diagnosticMode) currentState = STATE_MAGNETOMETER_SEEK_NORTH;
+  else currentState = STATE_DIAGNOSTIC;
   //calibrate();
 
   
@@ -273,7 +280,9 @@ void loop() {
         motors.turnRightStationary(0);
         magnetometer.finishedCalibration();
         
-        currentState = STATE_MAGNETOMETER_METAL_DETECT;
+        if(diagnosticMode2)currentState = STATE_DIAGNOSTIC;
+        else if (diagnosticMode3) currentState = STATE_DIAGNOSTIC_METAL;
+        else currentState = STATE_MAGNETOMETER_METAL_DETECT;
         targetRotation = kinematics.currentRotation*(180 / PI) + divisionTotal;
       }
     }
@@ -411,6 +420,91 @@ void loop() {
       
       currentState = STATE_MAGNETOMETER_CALIBRATE;
       currentStep=0;
+    }
+
+    else if (currentState == STATE_DIAGNOSTIC){
+     // Serial.println("Background_Field_Strength_/_gauss");
+
+     float currentAngle = kinematics.currentRotation * (180/PI);
+
+      // convert current rotation to simply be in 360 degree bounds
+      while(currentAngle > 360){
+        currentAngle -= 360;
+      }
+      while(currentAngle < 0){
+        currentAngle += 360;
+      }
+
+      if(diagnosticMode){
+        float fs = magnetometer.calculateTeslaSum();
+        Serial.println(fs);
+    
+      }
+      else if(diagnosticMode2){
+        float currentAngle = kinematics.currentRotation * (180/PI);
+  
+        // convert current rotation to simply be in 360 degree bounds
+        while(currentAngle > 360){
+          currentAngle -= 360;
+        }
+        while(currentAngle < 0){
+          currentAngle += 360;
+        }
+        int index = currentAngle /4;
+        
+        float x = magnetometer.backgroundFieldMap_xs[index];
+        float y = magnetometer.backgroundFieldMap_ys[index];
+        float z = magnetometer.backgroundFieldMap_zs[index];
+      // float fs = magnetometer.calculateTeslaSum();
+        Serial.print(sqrt(x * x + y*y));
+        Serial.print(",");
+
+
+        float fsc = magnetometer.calculateTeslaSumFiltered(currentAngle/4) -200;
+  
+          Serial.print(fsc);
+          fcslast = fsc;
+        Serial.print(",");
+      
+        float fs = magnetometer.calculateTeslaSum();
+        Serial.println(fs);
+  
+
+        
+        
+      }
+      
+      
+
+      
+      
+    }
+    else if (currentState == STATE_DIAGNOSTIC_METAL){
+      float currentAngle = kinematics.currentRotation * (180/PI);
+
+      // convert current rotation to simply be in 360 degree bounds
+      while(currentAngle > 360){
+        currentAngle -= 360;
+      }
+      while(currentAngle < 0){
+        currentAngle += 360;
+      }
+      int index = currentAngle /4;
+      
+      float x = magnetometer.backgroundFieldMap_xs[index];
+      float y = magnetometer.backgroundFieldMap_ys[index];
+      float z = magnetometer.backgroundFieldMap_zs[index];
+    // float fs = magnetometer.calculateTeslaSum();
+      Serial.print(sqrt(x * x + y*y));
+      Serial.print(",");
+      float fsc = magnetometer.calculateTeslaSumFiltered(currentAngle/4);
+
+      Serial.print(fsc);
+      Serial.print(",");
+      float fs = magnetometer.calculateTeslaSum();
+      Serial.println(fs);
+      Serial.println(",");
+    //    fcslast = fsc;
     }
     
     delay(30);

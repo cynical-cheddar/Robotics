@@ -9,7 +9,7 @@
 class Magnetometer_c {
   public:
 
-  #define CALIBRATION_SAMPLES 70  // Number of compass readings to take when calibrating
+  #define CALIBRATION_SAMPLES 200  // Number of compass readings to take when calibrating
   
   // Allowed deviation (in degrees) relative to target angle that must be achieved before driving straight
   #define DEVIATION_THRESHOLD 5
@@ -193,16 +193,16 @@ class Magnetometer_c {
       float background_x = backgroundFieldMap_xs[filterIndex];
       float background_y = backgroundFieldMap_ys[filterIndex];
       float background_z = backgroundFieldMap_zs[filterIndex];
-      for(int i = 0; i < 100; i ++)
+      for(int i = 0; i < 10; i ++)
       {
         mag.read();
         avg_x += (mag.m.x - background_x);
         avg_y += (mag.m.y - background_y);
         avg_z += (mag.m.z - background_z);
       }
-      avg_x /= 100.0;
-      avg_y /= 100.0;
-      avg_z /= 100.0;
+      avg_x /= 10.0;
+      avg_y /= 10.0;
+      avg_z /= 10.0;
 
       // TODO: Find vector direction to further filter
 
@@ -219,23 +219,24 @@ class Magnetometer_c {
       float avg_x = 0;
       float avg_y = 0;
       float avg_z = 0;
-      for(int i = 0; i < 10; i ++)
+      for(int i = 0; i < 100; i ++)
       {
         mag.read();
         avg_x += (mag.m.x);
         avg_y += (mag.m.y);
         avg_z += (mag.m.z);
       }
-      avg_x /= 10.0;
-      avg_y /= 10.0;
-      avg_z /= 10.0;
+      avg_x /= 100.0;
+      avg_y /= 100.0;
+      avg_z /= 100.0;
      // Serial.println((String) "avg x " + avg_x + " avg y " + avg_y); 
 
 
      // Serial.println((String) "raw teslas: " + avg_x + " " +avg_y + " " + avg_z);
       // avg is the average measure of the magnetic vector.
-      return avg_x + avg_y;
-  }
+      return sqrt(avg_x * avg_x + avg_y*avg_y);
+
+    }
 
   float calculateTeslaSumMagnitudeFiltered(int filterIndex){
     float avg_x = 0;
