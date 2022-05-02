@@ -26,6 +26,7 @@ class Results_c {
   int volatileCount = 0;
   int EEPROMCount = 0;
   float resultsBuffer[RESULTS_DIM];
+  float outputBuffer[RESULTS_DIM];
 
   bool writeBufferToEEPROM() {
     for (int i = 0; i < RESULTS_DIM; i++) {
@@ -72,14 +73,19 @@ class Results_c {
     // results collected
     for (int i = 0; i < EEPROMCount; i++) {
       for (int j = 0; j < RESULTS_DIM; j++) {
-        resultsBuffer[j] = EEPROM.read(i * RESULTS_DIM + j);
+        outputBuffer[j] = EEPROM.read(i * RESULTS_DIM + j);
         delay(1);
       }
       for (int k = 0; k < RESULTS_DIM; k++) {
-        if( SERIAL_ACTIVE ) Serial.println(resultsBuffer[k]);
+        if( SERIAL_ACTIVE ) Serial.println(outputBuffer[k]);
         delay(1);
       }
     }
+
+    for (int i = 0; i < volatileCount; i++) {
+        if( SERIAL_ACTIVE ) Serial.println(resultsBuffer[i]);
+        delay(1);
+      }
     
   
     if( SERIAL_ACTIVE ) Serial.println( "---End of Results ---\n\n" ); 

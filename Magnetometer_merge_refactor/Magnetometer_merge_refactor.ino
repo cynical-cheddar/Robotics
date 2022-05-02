@@ -4,13 +4,19 @@
 #include "kinematics.h"
 #include "magnetometer.h"
 #include "pid.h"
-#include "results.h"
+//#include "results.h"
 #define YELLOW_LED_PIN 13
 
 
 Motors_c motors;
 Kinematics_c kinematics;
 Magnetometer_c magnetometer;
+//Results_c results;
+
+int volatileCount = 0;
+float resultsBuffer[100];
+
+bool resultsToneDoOnce = false;
 
 float fcslast = 0;
 // magnetometer calibrator 
@@ -73,7 +79,7 @@ float bestMetalAngle = 180;
 #define STATE_DIAGNOSTIC 15
 #define STATE_DIAGNOSTIC_METAL 16
 bool diagnosticMode = false;
-bool diagnosticMode2 = true;
+bool diagnosticMode2 = false;
 bool diagnosticMode3 = false;
 int currentState = 0;
 int calibrationRotationCount = 1;
@@ -157,6 +163,8 @@ bool isBestMagneticRotation(float newAngle){
 
 // Repeats.
 void loop() {
+
+  //Serial.println((String)"State: " + currentState);
   
   unsigned long exec_time_start;
   exec_time_start = micros();
@@ -207,7 +215,34 @@ void loop() {
         delay(200);
         noTone(6);
         delay(300);
+        currentState = STATE_PRINT_RESULTS;
       }
+    }
+
+    if (currentState == STATE_PRINT_RESULTS) {
+      if (!resultsToneDoOnce) {
+        resultsToneDoOnce = true;
+        delay(500);
+        tone(6,100);
+        delay(500);
+        noTone(6);
+        delay(500);
+        tone(6,400);
+        delay(500);
+        noTone(6);
+        delay(500);
+        tone(6,800);
+        delay(500);
+        noTone(6);
+      }
+      motors.turnRightStationary(0);
+      //Serial.println("Results printing");
+      //results.reportResultsOverSerial();
+      for (int i = 0; i < volatileCount; i++) {
+        Serial.println(resultsBuffer[i]);
+      }
+      Serial.println();
+      delay(5000);
     }
     
     if(currentState == STATE_MAGNETOMETER_ROTATE_TO_BEST_MAGNETIC_ANGLE){
@@ -232,6 +267,14 @@ void loop() {
         delay(100);
         noTone(6);
         targetRotation = currentAngle + divisionTotal;
+
+        resultsBuffer[volatileCount] = bestMagneticRotation;
+        volatileCount++;
+        /*bool resultsBufferNotFull = results.addResult(bestMagneticRotation);
+          if (!resultsBufferNotFull) {
+            currentState = STATE_PRINT_RESULTS;
+          }*/
+        
         currentState = STATE_MAGNETOMETER_METAL_DETECT;
       }
     }
@@ -241,7 +284,7 @@ void loop() {
 
     
     else if (currentState == STATE_MAGNETOMETER_CALIBRATE){
-
+    
       int steps = 90;
       int interval = 360 / steps;
     //  Serial.println(kinematics.currentRotation);
